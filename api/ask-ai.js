@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const API_KEY = process.env.GEMINI_API_KEY;
+  const API_KEY = process.env.CLAUDE_API_KEY;
   if (!API_KEY) {
     return res.status(500).json({ error: "API Key is missing" });
   }
@@ -25,13 +25,20 @@ export default async function handler(req, res) {
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+      "https://api.anthropic.com/v1/messages",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY,
+          "anthropic-version": "2023-06-01"
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 4096,
+          messages: [{
+            role: "user",
+            content: prompt
           }]
         })
       }
@@ -39,23 +46,23 @@ export default async function handler(req, res) {
 
     const json = await response.json();
 
-    // معالجة الأخطاء من Google
+    // معالجة الأخطاء من Claude
     if (json.error) {
       return res.status(500).json({ 
-        error: "Google API Error", 
+        error: "Claude API Error", 
         details: json.error.message || json.error
       });
     }
 
     // استخراج النص
-    if (json.candidates && json.candidates[0]?.content?.parts?.[0]?.text) {
-      const resultText = json.candidates[0].content.parts[0].text;
+    if (json.content && json.content[0]?.text) {
+      const resultText = json.content[0].text;
       return res.status(200).json({ result: resultText });
     }
 
     // إذا لم يكن هناك نتيجة واضحة
     return res.status(500).json({ 
-      error: "Invalid response structure from Google", 
+      error: "Invalid response structure from Claude", 
       details: JSON.stringify(json)
     });
 
