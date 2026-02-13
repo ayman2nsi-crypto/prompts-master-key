@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt's Master Key V6</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Kufi+Arabic:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #080c14;
+  --surf:     #0d1525;
+  --surf2:    #121e32;
+  --line:     #1a2d4a;
+  --prim:     #00d4ff;
+  --prim-dim: rgba(0,212,255,0.12);
+  --gold:     #f0b429;
+  --gold-dim: rgba(240,180,41,0.12);
+  --green:    #00e676;
+  --red:      #ff4444;
+  --txt:      #c8daf0;
+  --txt-dim:  #5a7a9a;
+  --mono:     'IBM Plex Mono', monospace;
+  --arabic:   'Noto Kufi Arabic', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--arabic);
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* ─── GRID LINES BACKGROUND ─── */
+body::before {
+  content:'';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap { max-width: 1300px; margin: 0 auto; padding: 30px 20px; position: relative; z-index: 1; }
+
+/* ─── HEADER ─── */
+header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 30px 0 40px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 35px;
+}
+.header-left { display: flex; flex-direction: column; gap: 6px; }
+.header-badge {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--prim);
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.header-center { text-align: center; }
+.logo-ring {
+  width: 64px; height: 64px;
+  border: 2px solid var(--prim);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+  position: relative;
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+@keyframes pulse-ring {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,212,255,0.4); }
+  50%      { box-shadow: 0 0 0 12px rgba(0,212,255,0); }
+}
+.logo-ring svg { width: 30px; height: 30px; fill: var(--prim); }
+h1 {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  letter-spacing: 0.15em;
+  color: var(--prim);
+  text-transform: uppercase;
+}
+.version-tag {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+}
+
+/* ─── SCORE DISPLAY ─── */
+.score-panel {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+}
+.score-num {
+  font-family: var(--mono);
+  font-size: 2.8rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: color 0.4s;
+  color: var(--red);
+}
+.score-num.mid { color: var(--gold); }
+.score-num.high { color: var(--green); }
+.score-bar-wrap {
+  width: 140px; height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.score-bar {
+  height: 100%;
+  background: var(--red);
+  transition: width 0.5s cubic-bezier(.4,0,.2,1), background 0.4s;
+  border-radius: 2px;
+}
+
+/* ─── CHECK ITEMS ─── */
+.checks {
+  display: flex; flex-direction: column; gap: 4px;
+  align-items: flex-end;
+}
+.chk {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--txt-dim);
+  display: flex; align-items: center; gap: 6px;
+  transition: color 0.3s;
+}
+.chk::before {
+  content: '○';
+  transition: 0.3s;
+}
+.chk.ok { color: var(--green); }
+.chk.ok::before { content: '●'; }
+
+/* ─── SECTION ─── */
+.panel {
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--prim), transparent);
+  border-radius: 4px 4px 0 0;
+}
+.panel-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--prim);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+/* ─── SELECT CUSTOM ─── */
+select, textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--txt);
+  font-family: var(--arabic);
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  appearance: none;
+}
+select:focus, textarea:focus { border-color: var(--prim); }
+textarea {
+  min-height: 90px;
+  resize: vertical;
+  margin-top: 14px;
+  line-height: 1.7;
+  direction: rtl;
+}
+
+/* ─── DNA MATRIX GRID ─── */
+.dna-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.dna-cell {
+  background: var(--surf2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 14px;
+  transition: border-color 0.2s;
+}
+.dna-cell:hover { border-color: rgba(0,212,255,0.3); }
+.dna-key {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--prim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.dna-key span { color: var(--txt-dim); font-size: 0.55rem; }
+.dna-cell select { font-size: 0.8rem; padding: 7px 10px; }
+
+/* ─── OUTPUT ─── */
+.output-wrap {
+  background: #020810;
+  border: 1px solid var(--prim);
+  border-radius: 3px;
+  padding: 28px;
+  min-height: 380px;
+  position: relative;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 2;
+  white-space: pre-wrap;
+  direction: ltr;
+  color: #8baabf;
+  overflow: auto;
+}
+.output-wrap::before {
+  content: 'SOVEREIGN OUTPUT';
+  position: absolute;
+  top: -9px; right: 20px;
+  background: #020810;
+  padding: 0 8px;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--prim);
+}
+
+/* Syntax coloring */
+.tok-section  { color: var(--prim); font-weight: 600; }
+.tok-key      { color: var(--gold); }
+.tok-value    { color: #a8d8a0; }
+.tok-var      { color: #ff9f43; background: rgba(255,159,67,0.1); border-bottom: 1px dashed #ff9f43; }
+.tok-comment  { color: var(--txt-dim); font-style: italic; }
+.tok-instr    { color: #c8b8ff; }
+.tok-warn     { color: var(--red); }
+
+/* ─── BUTTONS ─── */
+.btn-row { display: flex; gap: 10px; margin-top: 18px; }
+.btn {
+  padding: 12px 24px;
+  border: none; border-radius: 3px;
+  font-family: var(--arabic);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.btn:active::after { opacity: 0.08; }
+.btn-copy {
+  background: var(--prim);
+  color: #000;
+  flex: 1;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+.btn-copy:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,212,255,0.35); }
+.btn-reset {
+  background: var(--line);
+  color: var(--txt-dim);
+  font-size: 0.8rem;
+}
+.btn-reset:hover { background: #1e2d3d; color: var(--txt); }
+
+/* ─── COPY FLASH ─── */
+.copy-flash {
+  position: fixed;
+  bottom: 30px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--green);
+  color: #000;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  padding: 10px 24px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none;
+  z-index: 999;
+}
+.copy-flash.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── PRESET TABS ─── */
+.preset-row {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 16px;
+}
+.preset-tab {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--surf2);
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.preset-tab:hover { border-color: var(--prim); color: var(--prim); }
+.preset-tab.active { background: var(--prim-dim); border-color: var(--prim); color: var(--prim); }
+
+/* ─── LEGEND ─── */
+.legend {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.leg-item {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  display: flex; align-items: center; gap: 5px;
+  color: var(--txt-dim);
+}
+.leg-dot { width: 8px; height: 8px; border-radius: 1px; flex-shrink: 0; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 700px) {
+  header { grid-template-columns: 1fr; text-align: center; gap: 16px; }
+  .score-panel, .checks { align-items: center; }
+  .header-left { align-items: center; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="header-left">
+      <span class="header-badge">Prompt Engineering System</span>
+      <div class="checks">
+        <span class="chk" id="chk-preset">PRESET / ROLE</span>
+        <span class="chk" id="chk-task">TASK DEPTH</span>
+        <span class="chk" id="chk-vars">VARIABLES [ ]</span>
+        <span class="chk" id="chk-manual">MANUAL TUNING</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="logo-ring">
+        <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+      </div>
+      <h1>Master Key</h1>
+      <div class="version-tag">V 6.0 — REBUILT</div>
+    </div>
+
+    <div class="score-panel">
+      <div class="score-num" id="scoreNum">0%</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar" id="scoreBar" style="width:0%"></div>
+      </div>
+      <span style="font-family:var(--mono);font-size:0.6rem;color:var(--txt-dim);letter-spacing:0.1em;">QUALITY INDEX</span>
+    </div>
+  </header>
+
+  <!-- ── PRESET ── -->
+  <div class="panel">
+    <div class="panel-label">01 — Strategic Preset (14 DNA Profiles)</div>
+    <div class="preset-row" id="presetRow"></div>
+    <textarea id="taskInput" placeholder="اكتب المهمة هنا... مثال: صياغة [تقرير] مالي لعام [2026] يتضمن تحليل [المخاطر]" dir="rtl"></textarea>
+  </div>
+
+  <!-- ── DNA MATRIX ── -->
+  <div class="panel">
+    <div class="panel-label">02 — Scientific DNA Matrix</div>
+    <div class="dna-grid" id="dnaGrid"></div>
+  </div>
+
+  <!-- ── OUTPUT ── -->
+  <div class="panel">
+    <div class="panel-label">03 — Sovereign Output</div>
+    <div class="output-wrap" id="outputBox"></div>
+    <div class="btn-row">
+      <button class="btn btn-copy" onclick="copyPrompt()">نسخ البرومبت النهائي</button>
+      <button class="btn btn-reset" onclick="resetAll()">مسح الذاكرة</button>
+    </div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--prim)"></div>Section Header</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>DNA Key</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#a8d8a0"></div>DNA Value → Instruction</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ff9f43"></div>Variable [placeholder]</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#c8b8ff"></div>Execution Protocol</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="copy-flash" id="copyFlash">✓ COPIED TO CLIPBOARD</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  DATA LAYER
+// ═══════════════════════════════════════════════════════
+
+const DNA_SCHEMA = {
+  role: {
+    label: 'الدور / Role',
+    hint: 'الشخصية والخبرة',
+    opts: [
+      { v: 'senior_sw_architect',  ar: 'مهندس برمجيات أول' },
+      { v: 'expert_copywriter',    ar: 'كاتب إبداعي خبير' },
+      { v: 'data_scientist',       ar: 'عالم بيانات' },
+      { v: 'academic_researcher',  ar: 'باحث أكاديمي' },
+      { v: 'business_executive',   ar: 'مدير تنفيذي' },
+      { v: 'socratic_tutor',       ar: 'معلم سقراطي' },
+      { v: 'legal_consultant',     ar: 'مستشار قانوني' },
+      { v: 'financial_analyst',    ar: 'محلل مالي' },
+    ]
+  },
+  format: {
+    label: 'التنسيق / Format',
+    hint: 'شكل الإخراج',
+    opts: [
+      { v: 'markdown_structured', ar: 'Markdown هيكلي' },
+      { v: 'strict_json',         ar: 'JSON صارم' },
+      { v: 'numbered_steps',      ar: 'خطوات مرقّمة' },
+      { v: 'executive_brief',     ar: 'ملخص تنفيذي' },
+      { v: 'academic_report',     ar: 'تقرير أكاديمي' },
+      { v: 'conversational',      ar: 'أسلوب حواري' },
+      { v: 'code_only',           ar: 'كود فقط' },
+      { v: 'bullet_points',       ar: 'نقاط مختصرة' },
+    ]
+  },
+  reasoning: {
+    label: 'منهج التفكير / Reasoning',
+    hint: 'طريقة الاستدلال',
+    opts: [
+      { v: 'chain_of_thought',  ar: 'سلسلة أفكار (CoT)' },
+      { v: 'tree_of_thoughts',  ar: 'شجرة أفكار (ToT)' },
+      { v: 'first_principles',  ar: 'المبادئ الأولى' },
+      { v: 'step_by_step',      ar: 'خطوة بخطوة' },
+      { v: 'pros_cons',         ar: 'إيجابيات وسلبيات' },
+      { v: 'socratic_method',   ar: 'الطريقة السقراطية' },
+    ]
+  },
+  constraints: {
+    label: 'القيود / Constraints',
+    hint: 'ما يجب تجنّبه',
+    opts: [
+      { v: 'no_hallucination',    ar: 'بلا هلوسة' },
+      { v: 'no_fluff',            ar: 'بلا حشو' },
+      { v: 'no_assumptions',      ar: 'بلا افتراضات' },
+      { v: 'no_contradictions',   ar: 'بلا تناقضات' },
+      { v: 'cite_sources',        ar: 'مع مصادر' },
+      { v: 'no_code_explanation', ar: 'بلا شرح كود' },
+    ]
+  },
+  scope: {
+    label: 'نطاق العمل / Scope',
+    hint: 'عمق وعرض الإجابة',
+    opts: [
+      { v: 'technical_deep',      ar: 'عمق تقني' },
+      { v: 'global_overview',     ar: 'نظرة شاملة' },
+      { v: 'strategic_roadmap',   ar: 'خارطة طريق استراتيجية' },
+      { v: 'actionable_tutorial', ar: 'دليل تطبيقي' },
+      { v: 'concise_200',         ar: 'موجز ≤200 كلمة' },
+      { v: 'exhaustive',          ar: 'شامل ومفصّل' },
+    ]
+  },
+  failure: {
+    label: 'سلوك الفشل / Failure',
+    hint: 'عند عدم اليقين',
+    opts: [
+      { v: 'strict_refusal', ar: 'رفض صارم' },
+      { v: 'ask_questions',  ar: 'اطرح أسئلة' },
+      { v: 'best_effort',    ar: 'أفضل جهد ممكن' },
+    ]
+  },
+  success: {
+    label: 'معيار النجاح / Success',
+    hint: 'كيف تُقاس الجودة',
+    opts: [
+      { v: 'accuracy_logic',      ar: 'دقة منطقية' },
+      { v: 'executability',       ar: 'قابلية التنفيذ' },
+      { v: 'creativity_novelty',  ar: 'إبداع وجِدّة' },
+      { v: 'persuasion_impact',   ar: 'تأثير إقناعي' },
+      { v: 'clarity_simplicity',  ar: 'وضوح وبساطة' },
+    ]
+  },
+  language: {
+    label: 'اللغة / Language',
+    hint: 'لغة الإخراج',
+    opts: [
+      { v: 'arabic',        ar: 'العربية' },
+      { v: 'english',       ar: 'الإنجليزية' },
+      { v: 'bilingual',     ar: 'ثنائي اللغة' },
+      { v: 'code_only',     ar: 'كود فقط' },
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+//  DNA → INSTRUCTION TRANSLATION MAP
+//  هذا هو القلب الحقيقي للمنصة
+// ═══════════════════════════════════════════════════════
+
+const TRANSLATE = {
+  // ROLE
+  role: {
+    senior_sw_architect:  'You are a senior software architect with 15+ years of experience in system design, scalable architectures, and code quality. You prioritize clean, maintainable, production-ready solutions.',
+    expert_copywriter:    'You are an expert copywriter specializing in persuasive, audience-targeted content. You craft messages that convert, using proven rhetorical frameworks and emotional resonance.',
+    data_scientist:       'You are a data scientist with deep expertise in statistical analysis, machine learning, and data storytelling. You back every claim with quantifiable evidence.',
+    academic_researcher:  'You are a rigorous academic researcher. You apply scholarly standards: cite evidence, acknowledge limitations, distinguish between correlation and causation.',
+    business_executive:   'You are a seasoned C-suite executive with cross-industry experience. You think in terms of ROI, risk, market positioning, and organizational impact.',
+    socratic_tutor:       'You are a Socratic tutor. You guide the learner by asking probing questions, revealing assumptions, and building understanding from first principles rather than giving direct answers.',
+    legal_consultant:     'You are a legal consultant specialized in contract law and corporate governance. You identify risks, ambiguities, and obligations with precision, always noting when professional legal advice is required.',
+    financial_analyst:    'You are a senior financial analyst. You apply DCF models, ratio analysis, and scenario planning. Your output is data-driven, risk-adjusted, and actionable.',
+  },
+
+  // FORMAT
+  format: {
+    markdown_structured:  'Format your response using structured Markdown: use H2 for main sections, H3 for subsections, **bold** for key terms, and tables where comparative data applies.',
+    strict_json:          'Return ONLY valid JSON. No prose before or after. Use snake_case keys. Include a "metadata" object with "confidence" (0-1) and "assumptions" array.',
+    numbered_steps:       'Structure your response as a numbered sequential process. Each step must include: (a) the action, (b) the expected outcome, (c) a warning if applicable.',
+    executive_brief:      'Format as an executive brief: Lead with a 2-sentence TL;DR, then Key Findings, then Recommendations. Maximum signal, minimum noise.',
+    academic_report:      'Structure as an academic report: Abstract → Introduction → Analysis → Discussion → Conclusion. Use formal register, hedging language where uncertainty exists.',
+    conversational:       'Use a natural, direct conversational tone. Write as if explaining to a knowledgeable colleague over coffee — no jargon inflation, no corporate speak.',
+    code_only:            'Return ONLY executable code. No explanations, no prose. Include comments inside the code where critical. Code must run as-is.',
+    bullet_points:        'Organize all information as concise bullet points. Each bullet: max 1 sentence. Group related bullets under clear headings.',
+  },
+
+  // REASONING
+  reasoning: {
+    chain_of_thought: 'Before answering, think step by step explicitly: (1) restate the problem in your own words, (2) identify what information is needed, (3) reason through each sub-problem, (4) synthesize to a conclusion.',
+    tree_of_thoughts: 'Generate 3 distinct solution paths. Evaluate each path\'s strengths and weaknesses. Then select and elaborate the strongest path, explaining why it was chosen.',
+    first_principles: 'Break the problem down to its irreducible fundamental components. Question every assumption. Build your answer back up from axioms rather than analogy.',
+    step_by_step:     'Decompose your response into clearly labeled sequential steps. Each step must be atomic — one idea, one action.',
+    pros_cons:        'Structure your analysis as: (1) Pros — list with evidence, (2) Cons — list with evidence, (3) Verdict — weighted recommendation based on the specific context.',
+    socratic_method:  'Rather than providing direct answers, guide through a series of 3-5 probing questions that lead the user to discover the answer themselves. End with a synthesis.',
+  },
+
+  // CONSTRAINTS
+  constraints: {
+    no_hallucination:    'CRITICAL: Never fabricate facts, statistics, names, or citations. If you are uncertain, say so explicitly. Use phrases like "I am not certain but..." or "You should verify this."',
+    no_fluff:            'Be ruthlessly concise. Remove all filler phrases ("certainly", "great question", "it is worth noting that"), redundant restatements, and empty transitions. Every sentence must add information.',
+    no_assumptions:      'Do not assume anything that is not explicitly stated in the prompt. If critical information is missing, list the specific gaps before proceeding, or ask for clarification.',
+    no_contradictions:   'Before finalizing, check your response for internal contradictions. If your reasoning leads to a contradiction, surface it explicitly and resolve it.',
+    cite_sources:        'Support every factual claim with a source citation in [Author, Year] format. If you cannot cite a source, prefix the claim with "[UNVERIFIED]".',
+    no_code_explanation: 'Do not explain the code. Return only the code itself. Add inline comments inside the code for critical logic only.',
+  },
+
+  // SCOPE
+  scope: {
+    technical_deep:      'Go deep on technical specifics. Include implementation details, edge cases, performance considerations, and known failure modes.',
+    global_overview:     'Provide a high-level strategic overview. Prioritize breadth over depth. Identify the 3-5 most important dimensions without getting lost in detail.',
+    strategic_roadmap:   'Frame your response as a phased strategic roadmap: Phase 1 (immediate, 0-30 days), Phase 2 (medium-term, 1-3 months), Phase 3 (long-term, 3-12 months).',
+    actionable_tutorial: 'Make this a hands-on tutorial. Every concept must be tied to a concrete action the reader can take immediately. Include examples and expected results.',
+    concise_200:         'Limit your entire response to under 200 words. Prioritize the single most important insight. Cut everything else.',
+    exhaustive:          'Be comprehensive and exhaustive. Leave no relevant dimension unexplored. Better to over-explain than leave critical information out.',
+  },
+
+  // FAILURE
+  failure: {
+    strict_refusal: 'If you lack sufficient information or confidence to answer reliably, refuse to speculate. State clearly: "I cannot answer this reliably without [specific missing information]."',
+    ask_questions:  'If the task is ambiguous or underspecified, ask 2-3 clarifying questions BEFORE attempting an answer. Number the questions. Wait for answers before proceeding.',
+    best_effort:    'If information is incomplete, make your best-effort attempt but clearly flag all assumptions with [ASSUMED:] prefix and uncertainties with [UNCERTAIN:] prefix.',
+  },
+
+  // SUCCESS
+  success: {
+    accuracy_logic:     'Your response will be judged primarily on logical rigor and factual accuracy. Double-check your reasoning. Prefer precision over completeness.',
+    executability:      'Your response will be judged on whether it can be acted upon immediately. Include specific next steps, owners, and timelines where applicable.',
+    creativity_novelty: 'Your response will be judged on originality and creative insight. Avoid obvious or conventional approaches. Surprise the reader with a non-obvious angle.',
+    persuasion_impact:  'Your response will be judged on its persuasive power. Use evidence, narrative, and emotional hooks strategically. The reader must be moved to act.',
+    clarity_simplicity: 'Your response will be judged on how clearly a non-expert could understand it. Use simple language, concrete analogies, and avoid unnecessary jargon.',
+  },
+
+  // LANGUAGE
+  language: {
+    arabic:    'Write your entire response in Arabic (Modern Standard Arabic). Technical terms may appear in English in parentheses on first use.',
+    english:   'Write your entire response in English.',
+    bilingual: 'Write in both Arabic and English. Present each major section in Arabic first, then in English immediately below it, clearly separated.',
+    code_only: 'No natural language output. Return only executable code.',
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+//  PRESETS
+// ═══════════════════════════════════════════════════════
+const PRESETS = [
+  { label:'إدارة عليا',   role:'business_executive',  format:'executive_brief',    reasoning:'pros_cons',        constraints:'no_hallucination', scope:'strategic_roadmap',   failure:'best_effort',   success:'accuracy_logic',     language:'arabic' },
+  { label:'قانوني',       role:'legal_consultant',     format:'numbered_steps',     reasoning:'first_principles', constraints:'no_assumptions',   scope:'technical_deep',      failure:'strict_refusal', success:'accuracy_logic',    language:'arabic' },
+  { label:'موارد بشرية',  role:'business_executive',   format:'conversational',     reasoning:'chain_of_thought', constraints:'no_contradictions', scope:'actionable_tutorial', failure:'ask_questions',  success:'persuasion_impact', language:'arabic' },
+  { label:'تحليل مالي',   role:'financial_analyst',    format:'strict_json',        reasoning:'step_by_step',     constraints:'no_assumptions',   scope:'technical_deep',      failure:'strict_refusal', success:'accuracy_logic',    language:'arabic' },
+  { label:'تطوير أعمال',  role:'business_executive',   format:'markdown_structured', reasoning:'tree_of_thoughts', constraints:'no_fluff',         scope:'strategic_roadmap',   failure:'best_effort',   success:'executability',      language:'arabic' },
+  { label:'مبيعات',       role:'expert_copywriter',    format:'conversational',     reasoning:'pros_cons',        constraints:'no_contradictions', scope:'actionable_tutorial', failure:'ask_questions',  success:'persuasion_impact', language:'arabic' },
+  { label:'تسويق',        role:'expert_copywriter',    format:'bullet_points',      reasoning:'chain_of_thought', constraints:'no_fluff',         scope:'global_overview',     failure:'best_effort',   success:'creativity_novelty', language:'arabic' },
+  { label:'تدريب',        role:'socratic_tutor',       format:'conversational',     reasoning:'socratic_method',  constraints:'no_fluff',         scope:'actionable_tutorial', failure:'ask_questions',  success:'clarity_simplicity', language:'arabic' },
+  { label:'هندسة برمجية', role:'senior_sw_architect',  format:'markdown_structured', reasoning:'chain_of_thought', constraints:'no_fluff',         scope:'technical_deep',      failure:'ask_questions',  success:'executability',     language:'english' },
+  { label:'أمن سيبراني',  role:'senior_sw_architect',  format:'code_only',          reasoning:'step_by_step',     constraints:'no_hallucination', scope:'technical_deep',      failure:'strict_refusal', success:'accuracy_logic',    language:'code_only' },
+  { label:'بيانات',       role:'data_scientist',       format:'strict_json',        reasoning:'chain_of_thought', constraints:'no_assumptions',   scope:'technical_deep',      failure:'best_effort',   success:'accuracy_logic',     language:'english' },
+  { label:'سكرتير تنفيذي',role:'business_executive',   format:'numbered_steps',     reasoning:'step_by_step',     constraints:'no_fluff',         scope:'actionable_tutorial', failure:'ask_questions',  success:'executability',     language:'arabic' },
+  { label:'تعليم',        role:'socratic_tutor',       format:'conversational',     reasoning:'first_principles', constraints:'no_contradictions', scope:'actionable_tutorial', failure:'ask_questions',  success:'clarity_simplicity', language:'arabic' },
+  { label:'ترجمة',        role:'expert_copywriter',    format:'bullet_points',      reasoning:'step_by_step',     constraints:'no_hallucination', scope:'global_overview',     failure:'strict_refusal', success:'accuracy_logic',    language:'bilingual' },
+];
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let state = {
+  preset: -1,
+  task: '',
+  manual: false,
+  dna: {}
+};
+
+Object.keys(DNA_SCHEMA).forEach(k => {
+  state.dna[k] = DNA_SCHEMA[k].opts[0].v;
+});
+
+// ═══════════════════════════════════════════════════════
+//  BUILD UI
+// ═══════════════════════════════════════════════════════
+function buildPresets() {
+  const row = document.getElementById('presetRow');
+  PRESETS.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-tab';
+    btn.id = 'ptab_' + i;
+    btn.textContent = p.label;
+    btn.onclick = () => applyPreset(i);
+    row.appendChild(btn);
+  });
+}
+
+function buildDNA() {
+  const grid = document.getElementById('dnaGrid');
+  Object.entries(DNA_SCHEMA).forEach(([key, schema]) => {
+    const cell = document.createElement('div');
+    cell.className = 'dna-cell';
+
+    let opts = schema.opts.map(o =>
+      `<option value="${o.v}">${o.ar}</option>`
+    ).join('');
+
+    cell.innerHTML = `
+      <div class="dna-key">${schema.label} <span>/ ${schema.hint}</span></div>
+      <select id="dna_${key}" onchange="onDnaChange('${key}', this.value)">
+        ${opts}
+      </select>
+    `;
+    grid.appendChild(cell);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  EVENTS
+// ═══════════════════════════════════════════════════════
+function applyPreset(idx) {
+  const p = PRESETS[idx];
+  state.preset = idx;
+  state.manual = false;
+
+  Object.keys(p).forEach(k => {
+    if (k === 'label') return;
+    state.dna[k] = p[k];
+    const el = document.getElementById('dna_' + k);
+    if (el) el.value = p[k];
+  });
+
+  document.querySelectorAll('.preset-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('ptab_' + idx).classList.add('active');
+  update();
+}
+
+function onDnaChange(key, value) {
+  state.dna[key] = value;
+  state.manual = true;
+  state.preset = -1;
+  document.querySelectorAll('.preset-tab').forEach(t => t.classList.remove('active'));
+  update();
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCORE
+// ═══════════════════════════════════════════════════════
+function calcScore(task) {
+  const checks = {
+    preset: state.preset >= 0,
+    task:   task.length > 50,
+    vars:   task.includes('[') && task.includes(']'),
+    manual: state.manual
+  };
+  let score = 0;
+  Object.entries(checks).forEach(([k, v]) => {
+    const el = document.getElementById('chk-' + k);
+    if (v) { score += 25; el.classList.add('ok'); }
+    else { el.classList.remove('ok'); }
+  });
+  return score;
+}
+
+function updateScoreUI(score) {
+  const num = document.getElementById('scoreNum');
+  const bar = document.getElementById('scoreBar');
+  num.textContent = score + '%';
+  bar.style.width = score + '%';
+
+  if (score === 100) {
+    num.className = 'score-num high';
+    bar.style.background = 'var(--green)';
+  } else if (score >= 50) {
+    num.className = 'score-num mid';
+    bar.style.background = 'var(--gold)';
+  } else {
+    num.className = 'score-num';
+    bar.style.background = 'var(--red)';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  PROMPT BUILDER  ← THE REAL ENGINE
+// ═══════════════════════════════════════════════════════
+function buildPrompt(task) {
+  const d = state.dna;
+
+  // Gather all translated instructions
+  const roleInstr    = TRANSLATE.role[d.role]        || d.role;
+  const formatInstr  = TRANSLATE.format[d.format]    || d.format;
+  const reasonInstr  = TRANSLATE.reasoning[d.reasoning] || d.reasoning;
+  const constInstr   = TRANSLATE.constraints[d.constraints] || d.constraints;
+  const scopeInstr   = TRANSLATE.scope[d.scope]      || d.scope;
+  const failInstr    = TRANSLATE.failure[d.failure]  || d.failure;
+  const succInstr    = TRANSLATE.success[d.success]  || d.success;
+  const langInstr    = TRANSLATE.language[d.language] || d.language;
+
+  const roleLabel = DNA_SCHEMA.role.opts.find(o=>o.v===d.role)?.ar || d.role;
+
+  let p = '';
+  p += `## SYSTEM: ROLE DEFINITION\n`;
+  p += `${roleInstr}\n`;
+  p += `\n`;
+  p += `## TASK\n`;
+  p += `${task || '[أدخل المهمة الاستراتيجية هنا]'}\n`;
+  p += `\n`;
+  p += `## OUTPUT FORMAT\n`;
+  p += `${formatInstr}\n`;
+  p += `\n`;
+  p += `## REASONING PROTOCOL\n`;
+  p += `${reasonInstr}\n`;
+  p += `\n`;
+  p += `## CONSTRAINTS (HARD RULES)\n`;
+  p += `${constInstr}\n`;
+  p += `\n`;
+  p += `## SCOPE & DEPTH\n`;
+  p += `${scopeInstr}\n`;
+  p += `\n`;
+  p += `## FAILURE HANDLING\n`;
+  p += `${failInstr}\n`;
+  p += `\n`;
+  p += `## SUCCESS CRITERIA\n`;
+  p += `${succInstr}\n`;
+  p += `\n`;
+  p += `## LANGUAGE\n`;
+  p += `${langInstr}\n`;
+
+  return p;
+}
+
+// ═══════════════════════════════════════════════════════
+//  SYNTAX HIGHLIGHT FOR DISPLAY
+// ═══════════════════════════════════════════════════════
+function highlight(raw) {
+  // Escape HTML first
+  let s = raw
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+
+  // Section headers
+  s = s.replace(/^(## .+)$/gm, '<span class="tok-section">$1</span>');
+
+  // Variables [placeholder]
+  s = s.replace(/\[([^\]]+)\]/g, '<span class="tok-var">[$1]</span>');
+
+  return s;
+}
+
+// ═══════════════════════════════════════════════════════
+//  MAIN UPDATE
+// ═══════════════════════════════════════════════════════
+function update() {
+  const task = document.getElementById('taskInput').value;
+  state.task = task;
+
+  const score = calcScore(task);
+  updateScoreUI(score);
+
+  const raw = buildPrompt(task);
+  document.getElementById('outputBox').innerHTML = highlight(raw);
+
+  saveState();
+}
+
+// ═══════════════════════════════════════════════════════
+//  COPY
+// ═══════════════════════════════════════════════════════
+function copyPrompt() {
+  const text = document.getElementById('outputBox').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const f = document.getElementById('copyFlash');
+    f.classList.add('show');
+    setTimeout(() => f.classList.remove('show'), 2200);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  PERSIST  (in-memory only — no localStorage needed)
+// ═══════════════════════════════════════════════════════
+let _savedState = null;
+
+function saveState() {
+  _savedState = JSON.parse(JSON.stringify(state));
+}
+
+function resetAll() {
+  _savedState = null;
+  state.preset = -1;
+  state.task = '';
+  state.manual = false;
+  Object.keys(DNA_SCHEMA).forEach(k => {
+    state.dna[k] = DNA_SCHEMA[k].opts[0].v;
+    const el = document.getElementById('dna_' + k);
+    if (el) el.value = DNA_SCHEMA[k].opts[0].v;
+  });
+  document.getElementById('taskInput').value = '';
+  document.querySelectorAll('.preset-tab').forEach(t => t.classList.remove('active'));
+  update();
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+buildPresets();
+buildDNA();
+document.getElementById('taskInput').addEventListener('input', update);
+update();
+</script>
+</body>
+</html>
