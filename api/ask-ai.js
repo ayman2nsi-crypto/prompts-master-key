@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const API_KEY = process.env.CLAUDE_API_KEY;
+  const API_KEY = process.env.OPENAI_API_KEY;
   if (!API_KEY) {
     return res.status(500).json({ error: "API Key is missing" });
   }
@@ -25,44 +25,43 @@ export default async function handler(req, res) {
     }
 
     const response = await fetch(
-      "https://api.anthropic.com/v1/messages",
+      "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": API_KEY,
-          "anthropic-version": "2023-06-01"
+          "Authorization": `Bearer ${API_KEY}`
         },
         body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 4096,
+          model: "gpt-4o-mini",
           messages: [{
             role: "user",
             content: prompt
-          }]
+          }],
+          max_tokens: 4096
         })
       }
     );
 
     const json = await response.json();
 
-    // معالجة الأخطاء من Claude
+    // معالجة الأخطاء من OpenAI
     if (json.error) {
       return res.status(500).json({ 
-        error: "Claude API Error", 
+        error: "OpenAI API Error", 
         details: json.error.message || json.error
       });
     }
 
     // استخراج النص
-    if (json.content && json.content[0]?.text) {
-      const resultText = json.content[0].text;
+    if (json.choices && json.choices[0]?.message?.content) {
+      const resultText = json.choices[0].message.content;
       return res.status(200).json({ result: resultText });
     }
 
     // إذا لم يكن هناك نتيجة واضحة
     return res.status(500).json({ 
-      error: "Invalid response structure from Claude", 
+      error: "Invalid response structure from OpenAI", 
       details: JSON.stringify(json)
     });
 
