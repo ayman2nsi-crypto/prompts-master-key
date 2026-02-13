@@ -292,7 +292,60 @@ textarea {
   font-size: 0.8rem;
 }
 .btn-reset:hover { background: #1e2d3d; color: var(--txt); }
+/* ─── AI EXECUTE BUTTON ─── */
+.btn-execute {
+  background: linear-gradient(135deg, var(--gold), #f39c12);
+  color: #000;
+  flex: 1;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+.btn-execute:hover { 
+  transform: translateY(-2px); 
+  box-shadow: 0 8px 24px rgba(240,180,41,0.35); 
+}
+.btn-execute:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
+/* ─── AI RESULT BOX ─── */
+.ai-result-wrap {
+  background: #020810;
+  border: 1px solid var(--gold);
+  border-radius: 3px;
+  padding: 28px;
+  min-height: 200px;
+  position: relative;
+  font-family: var(--arabic);
+  font-size: 0.95rem;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  direction: rtl;
+  color: #8baabf;
+  overflow: auto;
+  margin-top: 20px;
+  display: none;
+}
+.ai-result-wrap.show {
+  display: block;
+}
+.ai-result-wrap::before {
+  content: 'نتيجة الذكاء الاصطناعي';
+  position: absolute;
+  top: -9px; right: 20px;
+  background: #020810;
+  padding: 0 8px;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+}
+.ai-loading {
+  text-align: center;
+  color: var(--gold);
+  font-family: var(--mono);
+}
 /* ─── COPY FLASH ─── */
 .copy-flash {
   position: fixed;
@@ -405,10 +458,14 @@ textarea {
   <div class="panel">
     <div class="panel-label">03 — Sovereign Output</div>
     <div class="output-wrap" id="outputBox"></div>
-    <div class="btn-row">
-      <button class="btn btn-copy" onclick="copyPrompt()">نسخ البرومبت النهائي</button>
-      <button class="btn btn-reset" onclick="resetAll()">مسح الذاكرة</button>
-    </div>
+<div class="btn-row">
+  <button class="btn btn-copy" onclick="copyPrompt()">نسخ البرومبت النهائي</button>
+  <button class="btn btn-execute" onclick="executeWithAI()" id="executeBtn">🤖 تنفيذ مباشر مع الذكاء الاصطناعي</button>
+  <button class="btn btn-reset" onclick="resetAll()">مسح الذاكرة</button>
+</div>
+
+<!-- AI Result Box -->
+<div class="ai-result-wrap" id="aiResultBox"></div>
     <div class="legend">
       <div class="leg-item"><div class="leg-dot" style="background:var(--prim)"></div>Section Header</div>
       <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>DNA Key</div>
@@ -839,6 +896,46 @@ function copyPrompt() {
   });
 }
 
+
+  // ═══════════════════════════════════════════════════════
+//  AI EXECUTION
+// ═══════════════════════════════════════════════════════
+async function executeWithAI() {
+  const resultBox = document.getElementById('aiResultBox');
+  const executeBtn = document.getElementById('executeBtn');
+  const promptText = document.getElementById('outputBox').innerText;
+  
+  // Show loading
+  resultBox.classList.add('show');
+  resultBox.innerHTML = '<div class="ai-loading">⏳ جارٍ التنفيذ...</div>';
+  executeBtn.disabled = true;
+  executeBtn.textContent = '⏳ جارٍ التنفيذ...';
+  
+  try {
+    const response = await fetch('/api/ask-ai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: promptText
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.result) {
+      resultBox.innerHTML = data.result;
+    } else {
+      resultBox.innerHTML = '❌ خطأ: ' + (data.error || 'فشل الاتصال بالذكاء الاصطناعي');
+    }
+  } catch (error) {
+    resultBox.innerHTML = '❌ خطأ في الاتصال: ' + error.message;
+  } finally {
+    executeBtn.disabled = false;
+    executeBtn.textContent = '🤖 تنفيذ مباشر مع الذكاء الاصطناعي';
+  }
+}
 // ═══════════════════════════════════════════════════════
 //  PERSIST  (in-memory only — no localStorage needed)
 // ═══════════════════════════════════════════════════════
@@ -873,3 +970,4 @@ update();
 </script>
 </body>
 </html>
+
